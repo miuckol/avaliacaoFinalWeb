@@ -36,7 +36,7 @@ if ($stmt = mysqli_prepare($conn, $sql)) {
     <header>
         <h1 class="texto-cabecalho">Jogos Digitação</h1>
 
-        <a href="forms.php">Login/Cadastrar</a>
+        <a href="#">Pontuação</a>
     </header>
 
     <main>
@@ -83,10 +83,10 @@ if ($stmt = mysqli_prepare($conn, $sql)) {
     <h2 class="titulo-equipe">Equipe</h2>
 
     <label>Nome da Equipe</label>
-    <input type="text" id="nomeEquipe" placeholder="Digite o nome da equipe">
+    <input type="text" id="nomeEq" placeholder="Digite o nome da equipe">
 
     <label>Código da Equipe</label>
-    <input type="text" id="codigoEquipe" placeholder="Digite o código">
+    <input type="password" id="senhaEq" placeholder="Digite o código">
 
     <div class="botoes-equipe">
         <button id="btnCriarEquipe">Criar Equipe</button>
