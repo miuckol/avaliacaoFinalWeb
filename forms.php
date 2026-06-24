@@ -3,27 +3,64 @@ require_once 'conexao.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    $id = $_POST['id'];
     $nome = $_POST['nome'];
     $email = $_POST['email'];
     $senha = $_POST['senha'];
+    $confirmacao = $_POST['confirmar_senha'];
 
-    $sql = "INSERT INTO cadastrar (id, nome, email, senha) VALUES (?, ?, ?, ?)";
+        if ($senha !== $confirmacao) {
+            $erro = "As senhas não coincidem.";
+        } else {
+            $senha_hash = password_hash($senha, PASSWORD_DEFAULT);
+    
+        $sql = "INSERT INTO cadastrar (nome, email, senha) VALUES (?, ?, ?)";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "sss", $nome, $email, $senha_hash);
+
+        if (mysqli_stmt_execute($stmt)) {
+            header("Location: index.php");
+            exit;
+        } else {
+            echo "Erro ao inserir: " . mysqli_stmt_error($stmt);
+        }
+
+        mysqli_stmt_close($stmt);
+    }
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+
+    session_start();
+
+    $email = $_POST['email_login'];
+    $senha = $_POST['senha_login'];
+
+    $sql = "SELECT id, nome, senha FROM cadastrar WHERE email = ?";
     $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, "ssss", $id, $nome, $email, $senha);
-    if (mysqli_stmt_execute($stmt)) {
-        header("Location: index.php");
-        exit;
+    mysqli_stmt_bind_param($stmt, "s", $email);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+
+    if ($row = mysqli_fetch_assoc($result)) {
+        if (password_verify($senha, $row['senha'])) {
+            $_SESSION['usuario_id'] = $row['id'];
+            $_SESSION['usuario_nome'] = $row['nome'];
+            header("Location: index.php");
+            exit;
+        } else {
+            echo "Senha incorreta.";
+        }
     } else {
-        echo "Erro ao inserir: " . mysqli_stmt_error($stmt);
+        echo "Usuário não encontrado.";
     }
 
     mysqli_stmt_close($stmt);
+
 }
-   mysqli_close($conn);
+
+    mysqli_close($conn);
+
 ?>
-
-
 <!DOCTYPE html>
 <html lang="pt-br">
     <head>
@@ -42,9 +79,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     <main id="formulário">
 
-        <form>
+        <form method="POST" action=forms.php>
+            <input type="hidden" name="id" value="<?php echo isset($id) ? $id : ''; ?>">
         
         <h1 class="titulo-forms">Formulário de cadastro</h1>
+
+    <?php if (isset($erro)): ?>
+        <p class="erro"><?php echo $erro; ?></p>
+    <?php endif; ?>
+
+    <?php if (isset($sucesso)): ?>
+        <p class="sucesso"><?php echo $sucesso; ?></p>
+    <?php endif; ?>
 
 <label>Nome:</label>            
 <input placeholder="Digite seu nome:" name="nome" type="text" required>
@@ -75,16 +121,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <span id="fecharModal">&times;</span>
         <h2>Login</h2>
 
-        <label>E-mail</label>
-        <input type="email" name="email" placeholder="Digite seu e-mail" required>
+        <form method="post" action="forms.php">
 
-        <label>Senha</label>
-        <input type="password" name="senha" placeholder="Digite sua senha" accept="">
+            <label>E-mail</label>
+            <input type="email" name="email" placeholder="Digite seu e-mail" required>
 
-        <button>Entrar</button>
+            <label>Senha</label>
+            <input type="password" name="senha" placeholder="Digite sua senha" accept="">
 
+            <button type="submit">Entrar</button>
+
+        </form>
     </div>
-
 </div>
 
         <script src="modal.js"></script>

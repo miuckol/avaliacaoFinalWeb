@@ -4,23 +4,30 @@ require_once 'conexao.php';
 $cadastrar = [];
 $sql = "SELECT id, nome, email, senha FROM cadastrar ORDER BY id DESC";
 
+if ($stmt = mysqli_prepare($conn, $sql)) {
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    if ($result) {
+        $cadastrar = mysqli_fetch_all($result, MYSQLI_ASSOC);
+    }
+    
+    mysqli_stmt_close($stmt);
+}
+
 $equipe = [];
 $sql = "SELECT idEq, nomeEq, senhaEq, pontuacao FROM equipe ORDER BY idEq DESC";
 
 if ($stmt = mysqli_prepare($conn, $sql)) {
     mysqli_stmt_execute($stmt);
-    
     $result = mysqli_stmt_get_result($stmt);
-    
     if ($result) {
-        $cadastrar = mysqli_fetch_all($result, MYSQLI_ASSOC);
-        $equipe = $cadastrar;
+        $equipe = mysqli_fetch_all($result, MYSQLI_ASSOC);
     }
-    
     mysqli_stmt_close($stmt);
-} else {
-    die("Erro ao preparar a consulta: " . mysqli_error($conn));
 }
+
+mysqli_close($conn);
+
 ?>
 
 <!DOCTYPE html>
@@ -36,7 +43,7 @@ if ($stmt = mysqli_prepare($conn, $sql)) {
     <header>
         <h1 class="texto-cabecalho">Jogos Digitação</h1>
 
-        <a href="#">Pontuação</a>
+        <a href="forms.php">Login/Cadastrar</a>
     </header>
 
     <main>
