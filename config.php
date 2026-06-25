@@ -5,15 +5,3 @@ $user   = "root";
 $pass   = ""; 
 $dbname = "jogoDigitacao";
 
-// Estabelece a conexão
-$conn = mysqli_connect($host, $user, $pass);
-
-// Verifica se houve erro
-if (mysqli_connect_error()) {
-    die("Erro de conexão: " . mysqli_connect_error());
-}
-
-// Define o charset para utf8mb4 (suporte a acentos e emojis)
-mysqli_set_charset($conn, "utf8mb4");
-
-?>

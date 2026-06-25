@@ -108,18 +108,47 @@ document.addEventListener("keydown", (evento) => {
 
                 btnReiniciar.classList.remove("oculto");
 
-                
-        }
+            const resultado = document.getElementById("resultado");
+            document.getElementById("tempoFinal").textContent = `${tempoSegundos}s`;
+            document.getElementById("errosFinal").textContent = erros;
+            document.getElementById("precisaoFinal").textContent = `${precisao}%`;
+            document.getElementById("wpmFinal").textContent = wpm;
+            document.getElementById("pontuacaoFinal").textContent = "Salvando...";
+            resultado.classList.remove("oculto");
 
-    } else {
+            fetch("salvar_pontuacao.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ wpm, precisao, erros, tempo: tempoSegundos })
+            })
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.ok) {
+                        document.getElementById("pontuacaoFinal").textContent = data.pontuacao;
+                    } else {
+                        document.getElementById("pontuacaoFinal").textContent = "Erro ao salvar";
+                        console.error(data.msg);
+                    }
+                })
+                .catch(err => {
+                    document.getElementById("pontuacaoFinal").textContent = "Erro de conexão";
+                    console.error(err);
+                });
 
-        erros++;
+                btnReiniciar.classList.remove("oculto");
 
-        spans[indiceAtual].classList.add("errado");
+            }
+
+        } else {
+
+            erros++;
+
+            spans[indiceAtual].classList.add("errado");
 
     }
-
+});
     btnReiniciar.addEventListener("click", () => {
 
-    location.reload(); })
+    location.reload(); 
 });
+    

@@ -1,8 +1,13 @@
 <?php
+
+session_start();
+
 require_once 'conexao.php';
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && $_POST['acao'] == 'cadastro')  {
+$erro = null;
+$sucesso = null;
 
+if ($_SERVER["REQUEST_METHOD"] == "POST" && ($_POST['acao'] ?? '') == 'cadastro') {
     $nome = $_POST['nome'];
     $email = $_POST['email'];
     $senha = $_POST['senha'];
@@ -28,9 +33,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $_POST['acao'] == 'cadastro')  {
     }
 }
 
+// Login
 if ($_SERVER["REQUEST_METHOD"] == "POST" && $_POST['acao'] == 'login') {
-
-    session_start();
 
     $email = $_POST['email'];
     $senha = $_POST['senha'];
@@ -58,70 +62,70 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $_POST['acao'] == 'login') {
 
 }
 
+// Mensagem de sessão (ex: após cadastro)
+if (isset($_SESSION['sucesso'])) {
+    $sucesso = $_SESSION['sucesso'];
+    unset($_SESSION['sucesso']);
+}
     mysqli_close($conn);
-
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
-    <head>
-        <meta charset="UTF-8">
-        <link rel="stylesheet" href="STYLE.css">
-    </head>
-    <body>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
- <header>
-         <h1>
-            <a href="index.php">Jogo de Digitação</a>
-         <h1>
+<header>
+    <h1 class="texto-cabecalho"><a href="index.php">Jogo de Digitação</a></h1>
+    <a href="ranking.php">Pontuação</a>
+</header>
 
-        <a href="#">Pontuação</a>
-    </header>
+<main id="formulário">
 
-    <main id="formulário">
-
-        <form method="POST" action=forms.php>
-            <input type="hidden" name="id" value="<?php echo isset($id) ? $id : ''; ?>">
+    <form method="POST" action=forms.php>
+        <input type="hidden" name="acao" value="cadastro">
         
         <h1 class="titulo-forms">Formulário de cadastro</h1>
 
-    <?php if (isset($erro)): ?>
-        <p class="erro"><?php echo $erro; ?></p>
-    <?php endif; ?>
+        <?php if ($erro): ?>
+            <p class="msg-erro"><?php echo $erro; ?></p>
+        <?php endif; ?>
 
-    <?php if (isset($sucesso)): ?>
-        <p class="sucesso"><?php echo $sucesso; ?></p>
-    <?php endif; ?>
+        <?php if ($sucesso): ?>
+            <p class="msg-sucesso"><?php echo $sucesso; ?></p>
+        <?php endif; ?>
 
-<label>Nome:</label>            
-<input placeholder="Digite seu nome:" name="nome" type="text" required>
+        <label>Nome:</label>            
+        <input placeholder="Digite seu nome:" name="nome" type="text" required>
 
-<label>E-mail:</label>            
-<input placeholder="Digite seu e-mail:" name="email" type="email" required>
+        <label>E-mail:</label>            
+        <input placeholder="Digite seu e-mail:" name="email" type="email" required>
 
-<label>Senha:</label>            
-<input placeholder="Crie sua senha:" name="senha" type="password" required>
+        <label>Senha:</label>            
+        <input placeholder="Crie sua senha:" name="senha" type="password" required>
 
-<label>Confirmar senha:</label>            
-<input placeholder="Confirme a senha:" name="confirmar_senha" type="password" required>
+        <label>Confirmar senha:</label>            
+        <input placeholder="Confirme a senha:" name="confirmar_senha" type="password" required>
 
-<button type="submit">Cadastrar</button>
+        <button type="submit">Cadastrar</button>
 
-<p class="link-login">
-    Já possui cadastro?
-    <a href="#" id="abrirLogin">Faça login aqui.</a>
-</p>
-        </form>
+        <p class="link-login">
+            Já possui cadastro?
+            <a href="#" id="abrirLogin">Faça login aqui.</a>
+        </p>
+    </form>
 
-    </main>
+</main>
 
 <div id="overlay" class="login-oculto">
-
     <div id="modalLogin">
-
         <span id="fecharModal">&times;</span>
         <h2>Login</h2>
 
-        <form method="post" action="forms.php">
+        <form method="POST" action="forms.php">
+            <input type="hidden" name="acao" value="login">
 
             <label>E-mail</label>
             <input type="email" name="email" placeholder="Digite seu e-mail" required>
@@ -130,12 +134,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $_POST['acao'] == 'login') {
             <input type="password" name="senha" placeholder="Digite sua senha" accept="">
 
             <button type="submit">Entrar</button>
-            <input type="hidden" name="acao" value="login">
-
         </form>
     </div>
 </div>
 
-        <script src="modal.js"></script>
-    </body>
+<script src="modal.js"></script>
+
+</body>
 </html>

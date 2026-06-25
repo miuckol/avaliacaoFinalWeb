@@ -177,11 +177,6 @@ main button:hover{
 
 /*CSS DE CADASTRO ABAIXO ATENÇÃO */ 
 
-
-
-
-
-
 #formulário{
 
     height: 600px;
@@ -372,4 +367,23 @@ button:hover{
     text-align: center;
 
     margin-top: 15px;
+}
+
+#mensagem-sucesso{
+    background: #4CAF50;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 10px;
+    text-align: center;
+}
+
+.usuario-logado{
+    margin-left: auto;
+    padding: 8px 15px;
+    background: #222;
+    color: white;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
 }
