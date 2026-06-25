@@ -1,30 +1,115 @@
 <?php
 require_once 'conexao.php';
 
-$cadastrar = [];
-$sql = "SELECT id, nome, email, senha FROM cadastrar ORDER BY id DESC";
+session_start();
 
-if ($stmt = mysqli_prepare($conn, $sql)) {
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    if ($result) {
-        $cadastrar = mysqli_fetch_all($result, MYSQLI_ASSOC);
-    }
-    
-    mysqli_stmt_close($stmt);
+$usuarioLogado = '';
+
+$mensagemSucesso = '';
+
+if (isset($_SESSION['sucesso'])) {
+    $mensagemSucesso = $_SESSION['sucesso'];
+    unset($_SESSION['sucesso']);
 }
 
-$equipe = [];
-$sql = "SELECT idEq, nomeEq, senhaEq, pontuacao FROM equipe ORDER BY idEq DESC";
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-if ($stmt = mysqli_prepare($conn, $sql)) {
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    if ($result) {
-        $equipe = mysqli_fetch_all($result, MYSQLI_ASSOC);
+   if (isset($_POST['acao']) && $_POST['acao'] == 'criar_equipe') {
+
+        if(!isset($_SESSION['usuario_id'])){
+            header("Location: forms.php");
+            exit;
+        }
+
+        $nomeEq = $_POST['nomeEq'];
+
+        // gerar código 6 letras
+        $codigoEq = substr(str_shuffle("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 6);
+
+        $sql = "INSERT INTO equipe (nomeEq, codigoEq, pontuacao) VALUES (?, ?, 0)";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "ss", $nomeEq, $codigoEq);
+        mysqli_stmt_execute($stmt);
+
+        // pegar id da equipe
+        $idEquipe = mysqli_insert_id($conn);
+
+        // vincular usuário
+        $idUsuario = $_SESSION['usuario_id'];
+
+        $sql2 = "UPDATE cadastrar SET equipe_id = ? WHERE id = ?";
+        $stmt2 = mysqli_prepare($conn, $sql2);
+        mysqli_stmt_bind_param($stmt2, "ii", $idEquipe, $idUsuario);
+        mysqli_stmt_execute($stmt2);
+
+        // mensagem
+        $_SESSION['sucesso'] = "Equipe criada! Código: " . $codigoEq;
+
+        // voltar
+        header("Location: index.php");
+        exit;
     }
-    mysqli_stmt_close($stmt);
 }
+
+    if (isset($_POST['acao']) && $_POST['acao'] == 'entrar_equipe') {
+
+       if(!isset($_SESSION['usuario_id'])){
+    header("Location: forms.php");
+    exit;
+}
+
+$codigoEq = $_POST['codigoEq'];
+
+$sql = "SELECT idEq FROM equipe WHERE codigoEq = ?";
+$stmt = mysqli_prepare($conn, $sql);
+mysqli_stmt_bind_param($stmt, "s", $codigoEq);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+
+if($row = mysqli_fetch_assoc($result)){
+
+    $idEquipe = $row['idEq'];
+    $idUsuario = $_SESSION['usuario_id'];
+
+    // 2. vincular usuário à equipe
+    $sql2 = "UPDATE cadastrar SET equipe_id = ? WHERE id = ?";
+    $stmt2 = mysqli_prepare($conn, $sql2);
+    mysqli_stmt_bind_param($stmt2, "ii", $idEquipe, $idUsuario);
+    mysqli_stmt_execute($stmt2);
+
+    $_SESSION['sucesso'] = "Entrou na equipe com sucesso!";
+
+} else {
+    $_SESSION['sucesso'] = "Código da equipe não existe!";
+}
+
+header("Location: index.php");
+exit;
+    }
+
+    $cadastrar = [];
+    $sql = "SELECT id, nome, email, senha FROM cadastrar ORDER BY id DESC";
+    if ($stmt = mysqli_prepare($conn, $sql)) {
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        if ($result) {
+            $cadastrar = mysqli_fetch_all($result, MYSQLI_ASSOC);
+        }
+        
+        mysqli_stmt_close($stmt);
+    }
+
+    $equipe = [];
+    $sql = "SELECT nomeEq, senhaEq, pontuacao FROM equipe ORDER BY idEq DESC";
+
+        if ($stmt = mysqli_prepare($conn, $sql)) {
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            if ($result) {
+                $equipe = mysqli_fetch_all($result, MYSQLI_ASSOC);
+            }
+            mysqli_stmt_close($stmt);
+        }
 
 mysqli_close($conn);
 
@@ -43,8 +128,26 @@ mysqli_close($conn);
     <header>
         <h1 class="texto-cabecalho">Jogos Digitação</h1>
 
-        <a href="forms.php">Login/Cadastrar</a>
-    </header>
+        <?php if(isset($_SESSION['usuario_nome'])): ?>
+
+        <div class="menu-logado">
+            <?php echo $_SESSION['usuario_nome']; ?>
+            <a href="sair.php">Sair</a>
+        </div>
+
+        <?php else: ?>
+            <a href="forms.php">Login/Cadastrar</a>
+        <?php endif; ?>
+
+        </header>
+
+
+            <?php if (!empty($mensagemSucesso)): ?>
+            <div id="mensagem-sucesso">
+               👤 <?php echo $mensagemSucesso; ?>
+            </div>
+
+        <?php endif; ?>
 
     <main>
 
@@ -84,36 +187,46 @@ mysqli_close($conn);
 
     </div>
 
-    <!-- ÁREA DE EQUIPE -->
-<div class="equipe-container">
+    <form action="index.php" method="POST">
 
-    <h2 class="titulo-equipe">Equipe</h2>
+        <div class="equipe-container">
+            <h2 class="titulo-equipe">Equipe</h2>
 
-    <label>Nome da Equipe</label>
-    <input type="text" id="nomeEq" placeholder="Digite o nome da equipe">
+            <label>Nome da Equipe</label>
+            <input type="text" name="nomeEq" placeholder="Digite o nome da equipe">
 
-    <label>Código da Equipe</label>
-    <input type="password" id="senhaEq" placeholder="Digite o código">
+            <label>Código da Equipe</label>
+            <input type="password" name="senhaEq" placeholder="Digite o código">
 
-    <div class="botoes-equipe">
-        <button id="btnCriarEquipe">Criar Equipe</button>
-        <button id="btnEntrarEquipe">Entrar em Equipe</button>
+            <div class="botoes-equipe">
+                <button type="submit" name="criar_equipe">Criar Equipe</button>
+                <button type="submit" name="entrar_equipe">Entrar em Equipe</button>
+            </div>
+
+        </div>
+    </form>
+
+    <!-- RANKING -->
+    <div class="ranking-container">
+
+        <h2>Ranking da Equipe</h2>
+
+        <div class="ranking-item">🥇 1º Lugar</div>
+        <div class="ranking-item">🥈 2º Lugar</div>
+        <div class="ranking-item">🥉 3º Lugar</div>
+
     </div>
 
-</div>
+    <script>
+    setTimeout(() => {
+        const msg = document.getElementById('mensagem-sucesso');
 
-<!-- RANKING -->
-<div class="ranking-container">
-
-    <h2>Ranking da Equipe</h2>
-
-    <div class="ranking-item">🥇 1º Lugar</div>
-    <div class="ranking-item">🥈 2º Lugar</div>
-    <div class="ranking-item">🥉 3º Lugar</div>
-
-</div>
+        if(msg){
+            msg.style.display = 'none';
+        }
+    }, 3000);
+    </script>
 
     <script src="SCRIPT.js"></script>
-
 </body>
 </html>

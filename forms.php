@@ -1,7 +1,7 @@
 <?php
 require_once 'conexao.php';
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+if ($_SERVER["REQUEST_METHOD"] == "POST" && $_POST['acao'] == 'cadastro')  {
 
     $nome = $_POST['nome'];
     $email = $_POST['email'];
@@ -28,12 +28,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+if ($_SERVER["REQUEST_METHOD"] == "POST" && $_POST['acao'] == 'login') {
 
     session_start();
 
-    $email = $_POST['email_login'];
-    $senha = $_POST['senha_login'];
+    $email = $_POST['email'];
+    $senha = $_POST['senha'];
 
     $sql = "SELECT id, nome, senha FROM cadastrar WHERE email = ?";
     $stmt = mysqli_prepare($conn, $sql);
@@ -130,6 +130,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <input type="password" name="senha" placeholder="Digite sua senha" accept="">
 
             <button type="submit">Entrar</button>
+            <input type="hidden" name="acao" value="login">
 
         </form>
     </div>
