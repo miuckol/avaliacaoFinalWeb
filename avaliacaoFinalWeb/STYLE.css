@@ -130,12 +130,46 @@ main button:hover{
     color: green;
 }
 
+#equipe-ranking{
+    display: grid;
+    grid-template-columns: 500px 350px;
+    gap: 80px;
+    margin: 40px auto;
+    width: 500px;
+}
+.equipe-container{
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    font-family: sans-serif;
+}
+.ranking-container{
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    font-family: sans-serif;
+}
 .equipe-container{
 
     font-family: sans-serif;
     margin: 20px;
     display: grid;
     width: 500px;
+
+}
+.ranking-container{
+    display: grid;
+    margin: 20px;
+    height: auto;
+    font-family: sans-serif;
+
+
+}
+.ranking-container h2{
+
+    border-bottom: solid 1px;
 
 }
 

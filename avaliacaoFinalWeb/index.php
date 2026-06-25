@@ -11,7 +11,60 @@ if (isset($_SESSION['sucesso'])) {
 }
 require_once 'conexao.php';
 
+$dadosEquipe = null;
+
+if(isset($_SESSION['usuario_id'])){
+
+    $sql = "
+        SELECT e.idEq, e.nomeEq, e.codigoEq, e.pontuacao
+        FROM cadastrar c
+        INNER JOIN equipe e ON c.equipe_id = e.idEq
+        WHERE c.id = ?
+    ";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "i", $_SESSION['usuario_id']);
+    mysqli_stmt_execute($stmt);
+
+    $result = mysqli_stmt_get_result($stmt);
+
+    $dadosEquipe = mysqli_fetch_assoc($result);
+}
+
+$membrosEquipe = [];
+
+if($dadosEquipe){
+
+    $sql = "SELECT nome FROM cadastrar WHERE equipe_id = ?";
+
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param($stmt, "i", $dadosEquipe['idEq']);
+
+    mysqli_stmt_execute($stmt);
+
+    $result = mysqli_stmt_get_result($stmt);
+
+    $membrosEquipe = mysqli_fetch_all($result, MYSQLI_ASSOC);
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+
+if (isset($_POST['acao']) && $_POST['acao'] == 'sair_equipe') {
+
+    $idUsuario = $_SESSION['usuario_id'];
+
+    $sql = "UPDATE cadastrar SET equipe_id = NULL WHERE id = ?";
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param($stmt, "i", $idUsuario);
+    mysqli_stmt_execute($stmt);
+
+    $_SESSION['sucesso'] = "Você saiu da equipe.";
+
+    header("Location: index.php");
+    exit;
+}
 
    if (isset($_POST['acao']) && $_POST['acao'] == 'criar_equipe') {
 
@@ -57,6 +110,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     header("Location: forms.php");
     exit;
 }
+
+
 
 $codigoEq = $_POST['codigoEq'];
 
@@ -190,6 +245,8 @@ mysqli_close($conn);
 
     </div>
 
+<section id="equipe-ranking" >
+ <?php if(!$dadosEquipe): ?>
   <form method="POST" action="index.php">
 
 <div class="equipe-container">
@@ -217,17 +274,37 @@ mysqli_close($conn);
 </div>
 
 </form>
-
+<?php endif; ?>
 <!-- RANKING -->
+
+<?php if($dadosEquipe): ?>
+
 <div class="ranking-container">
 
-    <h2>Ranking da Equipe</h2>
+    <h2>Equipe: <?php echo $dadosEquipe['nomeEq']; ?></h2>
 
-    <div class="ranking-item">🥇 1º Lugar</div>
-    <div class="ranking-item">🥈 2º Lugar</div>
-    <div class="ranking-item">🥉 3º Lugar</div>
+    <h3>Código: <?php echo $dadosEquipe['codigoEq']; ?></h3>
+
+    <h3>Membros</h3>
+
+    <?php foreach($membrosEquipe as $membro): ?>
+
+    <p>
+        👤 <?php echo $membro['nome']; ?>
+    </p>
+
+<?php endforeach; ?>
+
+    <form method="POST">
+    <button type="submit" name="acao" value="sair_equipe">
+        Sair da Equipe
+    </button>
+</form>
 
 </div>
+<?php endif; ?>
+
+    </section>
 
 <script>
 setTimeout(() => {

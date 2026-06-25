@@ -103,8 +103,19 @@ document.addEventListener("keydown", (evento) => {
             const wpm =
                 Math.round((caracteres / 5) / tempoMinutos);
 
+            const pontuacao =
+                Math.round(wpm + parseFloat(precisao));
+
             mensagem.textContent =
                 `Parabéns! Você concluiu a frase em ${tempoSegundos} segundos, com ${erros} erro(s), ${precisao}% de precisão e ${wpm} WPM.`;
+
+            fetch("salvar_pontuacao.php", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: "pontuacao=" + pontuacao
+    });
 
                 btnReiniciar.classList.remove("oculto");
 
