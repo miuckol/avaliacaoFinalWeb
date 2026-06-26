@@ -12,7 +12,7 @@ create table if not exists Cadastrar (
 create table if not exists Equipe (
 	idEq int AUTO_INCREMENT primary key,
 	nomeEq varchar (100) not null,
-    codigoEq varchar (10) not null unique,
+    codigoEq varchar (6) not null unique,
 	pontuacao int default 0
 );
 

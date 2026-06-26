@@ -1,6 +1,5 @@
 <?php
 session_start();
-require_once 'conexao.php';
 
 // Redireciona para login se não estiver autenticado
 if (!isset($_SESSION['usuario_id'])) {
@@ -8,25 +7,42 @@ if (!isset($_SESSION['usuario_id'])) {
     exit;
 }
 
+require_once 'conexao.php';
+
 $mensagemSucesso = '';
 if (isset($_SESSION['sucesso'])) {
     $mensagemSucesso = $_SESSION['sucesso'];
     unset($_SESSION['sucesso']);
 }
 
-//Criar Equipe
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['acao'])) {
+// Sair equipe
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (isset($_POST['acao']) && $_POST['acao'] == 'sair_equipe') {
+        $idUsuario = $_SESSION['usuario_id'];
+        $sql = "UPDATE cadastrar SET equipe_id = NULL WHERE id = ?";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "i", $idUsuario);
+        mysqli_stmt_execute($stmt);
+        $_SESSION['sucesso'] = "Você saiu da equipe.";
 
-   if ($_POST['acao'] == 'criar_equipe') {
-    $nomeEq = $_POST['nomeEq'];
-    $codigoEq = $_POST['codigoEq'];
+        header("Location: index.php");
+        exit;
+    }
 
-    if (empty($nomeEq) || empty($codigoEq)) {
-        $_SESSION['sucesso'] = 'Preencha o nome da equipe';
-    } else { // verifa se o cod ja existe
+    //Criar Equipe
+    if (isset($_POST['acao']) && $_POST['acao'] == 'criar_equipe') {
+        if(!isset($_SESSION['usuario_id'])){
+            header("Location: forms.php");
+            exit;
+        }
+
+        $nomeEq = $_POST['nomeEq'];
+
+        // gera o codigo de 6 letras
         $codigoEq = strtoupper(substr(str_shuffle("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"), 0, 6));
 
-        $sql = "INSERT INTO equipe (nomeEq, codigoEq) VALUES (?, ?)";
+        // inseri a equipe
+        $sql = "INSERT INTO equipe (nomeEq, codigoEq, pontuacao) VALUES (?, ?, 0)";
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, "ss", $nomeEq, $codigoEq);
         mysqli_stmt_execute($stmt);
@@ -43,65 +59,96 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['acao'])) {
 
         // mensagem
         $_SESSION['sucesso'] = "Equipe \"$nomeEq\" criada! Código: $codigoEq";
-
-    }
+    
         // voltar
-    header("Location: index.php");
-    exit;
-}
+        header("Location: index.php");
+        exit;
+    }
 
-// entrar na equipe
-    if ($_POST['acao'] == 'entrar_equipe') {
-        $codigoEq = trim(strtoupper($_POST['codigoEq'] ?? ''));
+    // entrar na equipe
+    if (isset($_POST['acao']) && $_POST['acao'] == 'entrar_equipe') {
+        if(!isset($_SESSION['usuario_id'])){
+            header("Location: forms.php");
+            exit;
+        }
 
-        if (empty($codigoEq)) {
-            $_SESSION['sucesso'] = 'Informe o codigo da equipe.';
-        } else {
-            $sql = "SELECT idEq , nomeEq FROM equipe WHERE codigoEq = ?";
-            $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, "s", $codigoEq);
-            mysqli_stmt_execute($stmt);
-            $result = mysqli_stmt_get_result($stmt);
+        $codigoEq = $_POST["codigoEq"];
 
-            if($row = mysqli_fetch_assoc($result)){
-                $idEquipe = $row['idEq'];
-                $nomeEq = $row['nomeEq'];
-                $idUsuario = $_SESSION['usuario_id'];
+        // 1. procurar equipe pelo codigo
+        $sql = "SELECT idEq , nomeEq FROM equipe WHERE codigoEq = ?";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "s", $codigoEq);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        if($row = mysqli_fetch_assoc($result)){
+            $idEquipe = $row['idEq'];
+            $idUsuario = $_SESSION['usuario_id'];
 
             // 2. vincular usuário à equipe
-                $sql2 = "UPDATE cadastrar SET equipe_id = ? WHERE id = ?";
-                $stmt2 = mysqli_prepare($conn, $sql2);
-                mysqli_stmt_bind_param($stmt2, "ii", $idEquipe, $idUsuario);
-                mysqli_stmt_execute($stmt2);
+            $sql2 = "UPDATE cadastrar SET equipe_id = ? WHERE id = ?";
+            $stmt2 = mysqli_prepare($conn, $sql2);
+            mysqli_stmt_bind_param($stmt2, "ii", $idEquipe, $idUsuario);
+            mysqli_stmt_execute($stmt2);
 
-                $_SESSION['sucesso'] = "Entrou na equipe com sucesso!";
-            } else {
-                $_SESSION['sucesso'] = "Código da equipe não encontrado.";
-            }
-            mysqli_stmt_close($stmt);
+            $_SESSION['sucesso'] = "Entrou na equipe com sucesso!";
+        } else {
+            $_SESSION['sucesso'] = "Código da equipe não encontrado.";
         }
-    header("Location: index.php");
-    exit;
+
+        header("Location: index.php");
+        exit;
     }
 }
 
-// dados usuario
-$idUsuario = $_SESSION["usuario_id"];
+$dadosEquipe = null;
+$membrosEquipe = [];
 
-// Equipe usuario
-$equipe = null;
-$sql = "SELECT e.nomeEq, e.codigoEq, e.pontuacao
-        FROM equipe e
-        JOIN cadastrar c ON c.equipe_id = e.idEq
-        WHERE c.id = ?";
-$stmt = mysqli_prepare($conn, $sql);
-mysqli_stmt_bind_param($stmt, "i", $idUsuario);
-mysqli_stmt_execute($stmt);
-$result = mysqli_stmt_get_result($stmt);    
-if($row = mysqli_fetch_assoc($result)){
-    $equipe = $row;
+if (isset($_SESSION['usuario_id'])) {
+    $sql = "SELECT e.idEq, e.nomeEq, e.codigoEq, e.pontuacao
+            FROM cadastrar c
+            INNER JOIN equipe e ON c.equipe_id = e.idEq
+            WHERE c.id = ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "i", $_SESSION['usuario_id']);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);    
+    $dadosEquipe = mysqli_fetch_assoc($result);
 }
-mysqli_stmt_close($stmt);
+
+if ($dadosEquipe) {
+    $sql = "SELECT nome FROM cadastrar WHERE equipe_id = ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "i", $dadosEquipe['idEq']);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $membrosEquipe = mysqli_fetch_all($result, MYSQLI_ASSOC);
+}
+
+// cadastra o usuario na equipe
+$cadastrar = [];
+$sql = "SELECT id, nome, email, senha FROM cadastrar ORDER BY id DESC";
+
+if ($stmt = mysqli_prepare($conn, $sql)) {
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    if ($result) {
+        $cadastrar = mysqli_fetch_all($result, MYSQLI_ASSOC);
+    }
+    mysqli_stmt_close($stmt);
+}
+
+$equipe = [];
+$sql = "SELECT idEq, nomeEq, codigoEq, pontuacao FROM equipe ORDER BY idEq DESC";
+
+if ($stmt = mysqli_prepare($conn, $sql)) {
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    if ($result) {
+        $equipe = mysqli_fetch_all($result, MYSQLI_ASSOC);
+    }
+    mysqli_stmt_close($stmt);
+}
 
 mysqli_close($conn);
 ?>
@@ -117,16 +164,27 @@ mysqli_close($conn);
 
 <header>
     <h1 class="texto-cabecalho">Jogos Digitação</h1>
+
+    <?php if(isset($_SESSION['usuario_nome'])): ?>
+
     <div class="menu-logado">
-        👤<?php echo htmlspecialchars($_SESSION['usuario_nome']); ?>
+        👤<?php echo $_SESSION['usuario_nome']; ?>
+        <a href="ranking.php">🏆 Ranking</a>
+        <a href="historico.php">📋 Histórico</a>
         <a href="sair.php">Sair</a>
     </div>
+
+    <?php else: ?>
+
+        <a href="forms.php">Login/Cadastrar</a>
+
+    <?php endif; ?>
 
 </header>
 
 <?php if ($mensagemSucesso): ?>
     <div id="mensagem-sucesso">
-        👤 <?php echo $mensagemSucesso; ?>
+        <?php echo $mensagemSucesso; ?>
     </div>
 <?php endif; ?>
 
@@ -150,57 +208,53 @@ mysqli_close($conn);
         <p>🌟 Pontuação: <span id="pontuacaoFinal"></span></p>
     </div>
 
-    <button id="btnReiniciar" class="oculto">Jogar Novamente</button>
+    <button id="btnReiniciar" class="oculto">🔄 Jogar Novamente</button>
 </div>
 
-<div class="equipe-wrapper">
-
-    <?php if ($equipe): ?>
-    <div class="equipe-container equipe">   
-        <h2 class="titulo-equipe">Minha Equipe</h2>
-        <p><strong><?php echo htmlspecialchars($equipe['nomeEq']); ?> </strong></p>
-        <p>Codigo: <code><?php echo htmlspecialchars($equipe['codigoEq']); ?></code></p>
-        <p>Pontuação <?php echo (int)$equipe['pontuacao']; ?></p>
-        <a href="ranking.php?liga=1" class="btn-ranking"> Ver ranking da liga</a>
-    </div>
-
-    <?php else: ?>
+<section id="equipe-ranking">
+    <?php if(!$dadosEquipe): ?>
     <div class="equipe-container">
         <h2 class="titulo-equipe">Equipes</h2>
-        
+
         <form action="index.php" method="POST">
-            <fieldset>
-                <legend>Criar uma equipe</legend>
-                <input type="hidden" name="acao" value="criar_equipe">
+            <label>Nome da Equipe</label>
+            <input type="text" name="nomeEq" placeholder="Digite o nome da equipe">
 
-                <label>Nome da Equipe</label>
-                <input type="text" name="nomeEq" placeholder="Digite o nome da equipe"><br>
-                <label>Código da Equipe</label>
-                <input type="text" name="codigoEq" placeholder="Digite o código" >
+            <label>Código da Equipe</label>
+            <input type="password" name="codigoEq" placeholder="Digite o código">
 
-
-                <button type="submit" name="criar_equipe">Criar Equipe</button>
-            </fieldset>
-
-            <fieldset>
-                <legend>Entrar em uma equipe</legend>
-                <input type="hidden" name="acao" value="entrar_equipe">
-
-                <label>Nome da Equipe</label>
-                <input type="text" name="nomeEq" placeholder="Digite o nome da equipe"><br>
-                <label>Código da Equipe</label>
-                <input type="text" name="codigoEq" placeholder="Digite o código" >
-
-                <button type="submit" name="entrar_equipe">Entrar em Equipe</button>
-            </fieldset>
+            <div class="botoes-equipe">
+                <button type="submit" name="acao" value="criar_equipe">Criar Equipe</button>
+                <button type="submit" name="acao" value="entrar_equipe">Entrar em Equipe</button>
+            </div>
         </form>
     </div>
+    <?php endif; ?>
 
-<?php endif; ?>
-</div>
+    <?php if($dadosEquipe): ?>
+    <div class="ranking-container">
+        <h2>Equipe: <?php echo $dadosEquipe['nomeEq']; ?></h2>
+        <h3>Código: <?php echo $dadosEquipe['codigoEq']; ?></h3>
+        <p><strong>Pontuação total da equipe:</strong> <?= (int) $dadosEquipe['pontuacao'] ?> pts</p>
+        <h3>Membros</h3>
+
+        <?php foreach($membrosEquipe as $membro): ?>
+        <p>
+            <?php echo $membro['nome']; ?>
+        </p>
+        <?php endforeach; ?>
+
+        <form method="POST">
+            <button type="submit" name="acao" value="sair_equipe">Sair da Equipe</button>
+        </form>
+    </div>
+    <?php endif; ?>
+</section>
+
 <script>
     const USUARIO_LOGADO = true; // php garante que esta logado
 </script>
+
 <script src="script.js"></script>
 
 <script>

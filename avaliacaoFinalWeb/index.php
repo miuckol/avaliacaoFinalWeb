@@ -11,7 +11,7 @@ if (isset($_SESSION['sucesso'])) {
 }
 require_once 'conexao.php';
 
-$dadosEquipe = null;
+
 
 if(isset($_SESSION['usuario_id'])){
 
@@ -31,6 +31,7 @@ if(isset($_SESSION['usuario_id'])){
     $dadosEquipe = mysqli_fetch_assoc($result);
 }
 
+$dadosEquipe = null;
 $membrosEquipe = [];
 
 if($dadosEquipe){

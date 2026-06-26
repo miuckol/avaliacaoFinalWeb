@@ -4,8 +4,11 @@ require_once 'conexao.php';
 
 header('Content-Type: application/json');
 
+// Log de debug — remove após confirmar que funciona
+$log = [];
+
 if (!isset($_SESSION['usuario_id'])) {
-    echo json_encode(['ok' => false, 'msg' => 'Não autenticado']);
+    echo json_encode(['ok' => false, 'msg' => 'Não autenticado', 'session' => session_id()]);
     exit;
 }
 
@@ -14,40 +17,60 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$data = json_decode(file_get_contents('php://input'), true);
+$raw  = file_get_contents('php://input');
+$data = json_decode($raw, true);
 
-$usuario_id = (int) $_SESSION['usuario_id'];
-$wpm        = isset($data['wpm'])      ? (int)   $data['wpm']      : 0;
-$precisao   = isset($data['precisao']) ? (float) $data['precisao'] : 0;
-$erros      = isset($data['erros'])    ? (int)   $data['erros']    : 0;
-$tempo      = isset($data['tempo'])    ? (float) $data['tempo']    : 0;
-
-if ($wpm < 0 || $wpm > 500 || $precisao < 0 || $precisao > 100 || $erros < 0 || $tempo < 0) {
-    echo json_encode(['ok' => false, 'msg' => 'Dados inválidos']);
+if (!is_array($data)) {
+    echo json_encode(['ok' => false, 'msg' => 'JSON inválido', 'raw' => $raw]);
     exit;
 }
 
-// Fórmula de pontuação: WPM × precisão / 10 (ajustável)
+$usuario_id = (int) $_SESSION['usuario_id'];
+$wpm        = isset($data['wpm'])      ? (int)   $data['wpm']      : 0;
+$precisao   = isset($data['precisao']) ? (float) $data['precisao'] : 0.0;
+$erros      = isset($data['erros'])    ? (int)   $data['erros']    : 0;
+$tempo      = isset($data['tempo'])    ? (float) $data['tempo']    : 0.0;
+
+if ($wpm < 0 || $wpm > 500 || $precisao < 0 || $precisao > 100 || $erros < 0 || $tempo < 0) {
+    echo json_encode(['ok' => false, 'msg' => 'Dados fora do intervalo', 'dados' => compact('wpm','precisao','erros','tempo')]);
+    exit;
+}
+
 $pontuacao = (int) round($wpm * ($precisao / 100) * 10);
 
-$sql  = "INSERT INTO partida (usuario_id, wpm, precisao, erros, tempo, pontuacao) VALUES (?, ?, ?, ?, ?, ?)";
-$stmt = mysqli_prepare($conn, $sql);
+// INSERT na tabela partida
+$stmt = mysqli_prepare($conn,
+    "INSERT INTO partida (usuario_id, wpm, precisao, erros, tempo, pontuacao) VALUES (?, ?, ?, ?, ?, ?)"
+);
+
+if (!$stmt) {
+    echo json_encode(['ok' => false, 'msg' => 'Prepare falhou: ' . mysqli_error($conn)]);
+    exit;
+}
+
+// tipos: usuario_id=i, wpm=i, precisao=d, erros=i, tempo=d, pontuacao=i
 mysqli_stmt_bind_param($stmt, "iididi", $usuario_id, $wpm, $precisao, $erros, $tempo, $pontuacao);
 
 if (mysqli_stmt_execute($stmt)) {
+    mysqli_stmt_close($stmt);
+
+    // Atualiza pontuação acumulada da equipe (só se o usuário pertence a uma)
     $sqlEq = "UPDATE equipe e
               JOIN cadastrar c ON c.equipe_id = e.idEq
               SET e.pontuacao = e.pontuacao + ?
               WHERE c.id = ?";
     $stmtEq = mysqli_prepare($conn, $sqlEq);
-    mysqli_stmt_bind_param($stmtEq, "ii", $pontuacao, $usuario_id);
-    mysqli_stmt_execute($stmtEq);
-    mysqli_stmt_close($stmtEq);
+    if ($stmtEq) {
+        mysqli_stmt_bind_param($stmtEq, "ii", $pontuacao, $usuario_id);
+        mysqli_stmt_execute($stmtEq);
+        mysqli_stmt_close($stmtEq);
+    }
 
     echo json_encode(['ok' => true, 'pontuacao' => $pontuacao]);
 } else {
-    echo json_encode(['ok' => false, 'msg' => 'Erro ao salvar pontuação']);
+    $err = mysqli_stmt_error($stmt);
+    mysqli_stmt_close($stmt);
+    echo json_encode(['ok' => false, 'msg' => 'Execute falhou: ' . $err]);
 }
 
-mysqli_stmt_close($stmt);
 mysqli_close($conn);
