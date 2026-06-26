@@ -22,7 +22,6 @@ let erros       = 0;
 let acertos     = 0;
 let jogoAtivo   = false;
 
-// ── Monta a frase como spans ──────────────────────────────────────────────
 function carregarFrase() {
     fraseElemento.innerHTML = "";
     fraseAtual.split("").forEach(function(letra) {
@@ -34,8 +33,6 @@ function carregarFrase() {
 }
 
 carregarFrase();
-
-// ── Botão Começar ─────────────────────────────────────────────────────────
 botao.addEventListener("click", function() {
     inicio    = Date.now();
     jogoAtivo = true;
@@ -44,17 +41,14 @@ botao.addEventListener("click", function() {
     fraseElemento.querySelectorAll("span")[0].classList.add("atual");
 });
 
-// ── Botão Reiniciar ───────────────────────────────────────────────────────
 btnReiniciar.addEventListener("click", function() {
     location.reload();
 });
-
-// ── Captura de teclas ─────────────────────────────────────────────────────
 document.addEventListener("keydown", function(evento) {
     if (!jogoAtivo) return;
 
     var tecla = evento.key;
-    if (tecla.length !== 1) return; // ignora Shift, Enter, Backspace, etc.
+    if (tecla.length !== 1) return;
 
     var spans        = fraseElemento.querySelectorAll("span");
     var letraCorreta = fraseAtual[indiceAtual];
@@ -68,13 +62,12 @@ document.addEventListener("keydown", function(evento) {
         if (indiceAtual < spans.length) {
             spans[indiceAtual].classList.add("atual");
         } else {
-            // ── Fim do jogo ──────────────────────────────────────────────
             jogoAtivo = false;
 
             var fim            = Date.now();
             var tempoSegundos  = ((fim - inicio) / 1000).toFixed(2);
             var totalTentativas = acertos + erros;
-            var precisao       = ((acertos / totalTentativas) * 100).toFixed(1);
+            var precisao       = totalTentativas > 0 ? ((acertos / totalTentativas) * 100).toFixed(1) : "100.0";
             var tempoMinutos   = parseFloat(tempoSegundos) / 60;
             var wpm            = Math.round((fraseAtual.length / 5) / tempoMinutos);
             var pontuacao      = Math.round(wpm * (parseFloat(precisao) / 100) * 10);

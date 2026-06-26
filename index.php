@@ -255,7 +255,7 @@ mysqli_close($conn);
     const USUARIO_LOGADO = true; // php garante que esta logado
 </script>
 
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 
 <script>
     setTimeout(() => {

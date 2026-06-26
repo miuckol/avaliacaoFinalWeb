@@ -1,11 +1,10 @@
 <?php
+ob_start();
 session_start();
 require_once 'conexao.php';
+ob_end_clean();
 
 header('Content-Type: application/json');
-
-// Log de debug — remove após confirmar que funciona
-$log = [];
 
 if (!isset($_SESSION['usuario_id'])) {
     echo json_encode(['ok' => false, 'msg' => 'Não autenticado', 'session' => session_id()]);

@@ -1,43 +1,103 @@
-# Jogo de Digitação — ProjetoFinalWeb
+# Jogo de Digitação
 
-## Como rodar
+## Descrição
 
-1. Importe `init_db.sql` no MySQL/MariaDB.
-2. Ajuste `config.php` com suas credenciais.
-3. Coloque todos os arquivos na raiz do seu servidor PHP (ex: `htdocs/jogo/`).
-4. Acesse `http://localhost/jogo/`.
+O **Jogo de Digitação** é uma aplicação web desenvolvida em PHP, JavaScript, HTML, CSS e MySQL. O sistema permite que usuários se cadastrem, façam login e participem de desafios de digitação, registrando suas pontuações e disponibilizando um histórico de partidas e um ranking de desempenho.
 
-## Estrutura de arquivos
+O projeto foi desenvolvido com foco na integração entre front-end e back-end, utilizando banco de dados para armazenamento das informações dos usuários e das partidas.
 
-| Arquivo | Descrição |
-|---|---|
-| `init_db.sql` | Cria banco e tabelas (`equipe`, `cadastrar`, `partida`) |
-| `config.php` | Credenciais do banco |
-| `conexao.php` | Abre a conexão MySQLi |
-| `forms.php` | Cadastro e login |
-| `index.php` | Página principal + jogo + gestão de equipes |
-| `script.js` | Lógica do jogo de digitação em JS |
-| `pontuacao.php` | Endpoint JSON que salva partida e atualiza pontuação da equipe |
-| `ranking.php` | Ranking geral (equipes + jogadores) e ranking de liga |
-| `historico.php` | Histórico de partidas do usuário logado |
-| `sair.php` | Destroi a sessão e redireciona |
-| `style.css` | Estilos |
-| `modal.js` | Abre/fecha modal de login |
+---
 
-## Bugs corrigidos
+# Funcionalidades
 
-- **`index.php`** — `$dadosEquipe` nunca era preenchido (variável trocada com `$equipe`); formulário de equipe nunca aparecia.
-- **`index.php`** — Uso de `$Equipe` (maiúsculo) no HTML quando a variável é `$equipe`.
-- **`index.php`** — Visitantes não autenticados agora são redirecionados para `forms.php`.
-- **`script.js`** — `fetch` apontava para `salvar_pontuacao.php` (arquivo inexistente); corrigido para `pontuacao.php` com `Content-Type: application/json`.
-- **`script.js`** — Painel de resultado (`#resultado`, `#tempoFinal`, etc.) nunca era preenchido nem exibido; corrigido.
-- **`script.js`** — Listener do `btnReiniciar` era adicionado dentro do `keydown` a cada tecla pressionada (vazamento de listeners); movido para fora.
-- **`forms.php`** — Erros de login faziam `echo` antes do HTML, causando página em branco; agora são armazenados em variável e exibidos no template.
-- **`init_db.sql`** — Ordem de criação corrigida (`equipe` antes de `cadastrar`) para satisfazer a FK.
+* Cadastro de usuários.
+* Login e autenticação utilizando sessões em PHP.
+* Jogo de digitação com frases.
+* Registro automático da pontuação.
+* Histórico das partidas realizadas.
+* Ranking de jogadores baseado nas pontuações.
+* Logout do usuário.
 
-## Funcionalidades adicionadas
+---
 
-- **`historico.php`** — Página com todas as partidas do usuário (WPM, precisão, erros, tempo, pontuação, data).
-- **Ranking individual** — `ranking.php` agora exibe ranking geral de jogadores (total e semanal), além do ranking de equipes.
-- **Linha destacada** — A linha do usuário logado aparece destacada nos rankings de jogadores.
-- **Redirecionamento** — `sair.php` agora redireciona para `forms.php` (em vez de `index.php`).
+# Tecnologias Utilizadas
+
+* HTML5
+* CSS3
+* JavaScript
+* PHP
+* MySQL
+* XAMPP
+* Git e GitHub
+
+---
+
+# Estrutura do Projeto
+
+```text
+Projeto/
+│
+├── README.md
+├── AI_USAGE_LOG.md
+├── index.php            # Página principal do jogo
+├── forms.php            # Cadastro e login
+├── conexao.php          # Conexão com o banco de dados
+├── config.php           # Configurações da aplicação
+├── historico.php        # Histórico das partidas
+├── pontuacao.php        # Registro das pontuações
+├── ranking.php          # Ranking dos jogadores
+├── sair.php             # Encerramento da sessão
+├── init_db.sql          # Script de criação do banco
+│
+├── style.css            # Estilos da aplicação
+├── script.js            # Lógica principal do jogo
+└── modal.js             # Controle dos modais da interface
+```
+
+---
+
+# Funcionamento do Sistema
+
+1. O usuário acessa a aplicação.
+2. Caso ainda não possua cadastro, cria uma conta através da página de formulários.
+3. Após realizar o login, uma sessão é iniciada.
+4. O usuário inicia uma partida de digitação.
+5. Durante a partida, o JavaScript controla o tempo, a frase e a validação da digitação.
+6. Ao final, a pontuação é enviada ao servidor e armazenada no banco de dados.
+7. O usuário pode consultar seu histórico de partidas e visualizar o ranking dos jogadores.
+
+---
+
+# Como Executar
+
+1. Instale o XAMPP.
+2. Inicie os serviços Apache e MySQL.
+3. Importe `init_db.sql` no MySQL/MariaDB. 
+4. Coloque todos os arquivos na raiz do seu servidor PHP (ex: `xampp/htdocs/jogo/`).
+5. Ajuste `config.php` com suas credenciais.
+6. Acesse `http://localhost/avaliacaoFinalWeb/`.
+
+---
+
+# Arquivos Principais
+
+| Arquivo         | Função                      |
+| --------------- | --------------------------- |
+| `index.php`     | Página principal do jogo    |
+| `forms.php`     | Cadastro e login            |
+| `SCRIPT.js`     | Lógica da partida           |
+| `STYLE.css`     | Estilos da interface        |
+| `modal.js`      | Controle das janelas modais |
+| `pontuacao.php` | Registro das pontuações     |
+| `historico.php` | Consulta ao histórico       |
+| `ranking.php`   | Exibição do ranking         |
+| `conexao.php`   | Conexão com o banco         |
+| `config.php`    | Configurações da aplicação  |
+| `sair.php`      | Logout do usuário           |
+| `init_db.sql`   | Script de criação do banco  |
+
+---
+
+# Autor
+
+Projeto desenvolvido por **Gabriel Silva** e **Caroline L P Moraes** como trabalho acadêmico.
